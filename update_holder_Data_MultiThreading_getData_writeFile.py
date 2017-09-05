@@ -73,59 +73,7 @@ def updateStockHolderCnt(tid):
             htmlinfo = getHtml(stockholder_info_web)
 
             WriteFile(FILEPATH_BASE2, htmlinfo)
-'''        time2 = time.time()
-        print("%06d, Time:%f, threading:%d" % (stockcode, (time2-time1), tid))
-        if htmlinfo == -1:
-            return -1
-        if htmlinfo == -2:
-            return -2
-        holderInfoSum = getHolderNum(htmlinfo)
-        date = DivDate(holderInfoSum[DATE])
-        announce_date = DivDate(holderInfoSum[ANNOUNCE_DATE])
-        stockHolderNum = DivHldNum(holderInfoSum[STOCK_HOLDER_INFO])
-        if stockHolderNum == "":
-            stockHolderNum = 0
-        stockHolderNum = int(stockHolderNum)
-        stockAvgNum = DivAvgNum(holderInfoSum[STOCK_AVG_NUM])
-        stockAvgNum = ''.join(stockAvgNum)
-        if stockAvgNum == "":
-            stockAvgNum = 0
-        stockAvgNum = int(stockAvgNum)
-        mutex.acquire()   #add lock
-        SQL2 = "select MAX(holder_date) from stockholdercnt where stock_code = %d" % (stockcode)
-        print("%06d, threading:%d ,mutex.acquire2" % (stockcode, tid))
-        cur.execute(SQL2)
-        date_now = cur.fetchone()
-        if date > date_now[0] and stockAvgNum != 0 and stockHolderNum != 0:
-            stockcode = int(stockcode)
-            date_now_time = time.localtime()
-            updateTime = "%d%02d%02d" % (date_now_time.tm_year, date_now_time.tm_mon, date_now_time.tm_mday)
-            SQL3 = "insert into stockholdercnt(stock_code,holder_date,holder_date_announce,holder_cnt,stock_cnt_one_holder,update_Time) " \
-                   "values (%d,%s,%s,%d,%d,%s)" % (stockcode, date, announce_date, stockHolderNum, stockAvgNum, updateTime)
-            try:
-                cur.execute(SQL3)
-            except Exception as e:
-                print(e)
-                print("stock_code(%d),holder_date(%s),holder_date_announce(%s),holder_cnt(%d),stock_cnt_one_holder(%d)"
-                      % (stockcode, date, announce_date, stockHolderNum, stockAvgNum))
-            FILEPATH_LOG = "%s%d%02d%02d" \
-                    % (FILEPATH_BASE, date_now_time.tm_year, date_now_time.tm_mon, date_now_time.tm_mday) + ".txt"
-            logData = "%06d    %s    %s    %d    %d \n" % (stockcode, date, announce_date, stockHolderNum, stockAvgNum)
-            if LOG == 1:
-                print(logData)
-            CNT = CNT + 1
-            if CNT % 1 == 0:
-                iFunRet = WriteFile(FILEPATH_LOG, logData)
-                print("WriteFile: %s by tid:%d " % (logData, tid))
-                if iFunRet == False:
-                    print("Error!! Write file failed!")
-                    exit()
-                conn.commit()
-        else:
-            print("No need to update! date(%s),date_now[0](%s),stockAvgNum(%d),stockHolderNum(%d)" % (date,date_now[0],stockAvgNum,stockHolderNum))
-        mutex.release()
-        print("%06d, threading:%d ,mutex.release2" % (stockcode, tid))
-'''
+            
 def updateEnd():
     global time_start
     global FILEPATH_BASE2
