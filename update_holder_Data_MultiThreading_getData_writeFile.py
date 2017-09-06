@@ -73,7 +73,7 @@ def updateStockHolderCnt(tid):
             htmlinfo = getHtml(stockholder_info_web)
 
             WriteFile(FILEPATH_BASE2, htmlinfo)
-            
+
 def updateEnd():
     global time_start
     global FILEPATH_BASE2
