@@ -1,6 +1,5 @@
 import time
-from StockSys_main import getHtml
-from com.ComMethod import lGetStockCodes,WriteFile
+from com.ComMethod import lGetStockCodes,WriteFile,getHtml
 
 global FILEPATH_LOG
 global LOG
