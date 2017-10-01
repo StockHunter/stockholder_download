@@ -1,5 +1,5 @@
 import time
-from com.ComMethod import lGetStockCodes,WriteFile,getHtml
+from com.ComMethod import lGetStockCodes, WriteFile, getHtml
 
 global FILEPATH_LOG
 global LOG
@@ -9,7 +9,6 @@ FILEPATH_BASE2 = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171001\\"
 def DownloadWebInfo(list_rows, sFilePath = FILEPATH_BASE2):
     global LOG
     global FILEPATH_LOG
-    global nStockCodeListLen
     print ("BaseFilePath: " + sFilePath )
     for stockCode in list_rows:
         print ("code:[%s]" % stockCode)
