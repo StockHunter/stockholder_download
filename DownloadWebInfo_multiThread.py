@@ -27,7 +27,7 @@ def DownloadWebInfoStart(sFilePath = FILEPATH_BASE2):
         stockCode = str(stockCode).zfill(6)
         local_stockCode.stock = stockCode
         local_stockCode.timeStart = timeStart1
-        print("ThreadName:[%s], stock:[%s]" % (threading.current_thread().name, local_stockCode.stock ))
+        print("ThreadName:[%s], stock:[%s]" % (threading.current_thread().name, local_stockCode.stock))
         if stockCode > "600979" and stockCode < "603268":
             time.sleep(3)
             downLoadWebInfo(sFilePath)
