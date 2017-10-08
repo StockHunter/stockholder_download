@@ -4,6 +4,7 @@ import chardet
 import threading
 import os
 import pymysql
+import time
 
 def WriteFile(fname,data):
     f = open(fname, 'w')
