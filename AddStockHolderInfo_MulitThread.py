@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 import pymysql
 import time
 import threading
-from com.ComMethod import GetAllStockCodes,ReadFile
+from com.ComMethod import GetAllStockCodes, ReadFile, getNewestDateDB
 
 global countOK
 global countNG

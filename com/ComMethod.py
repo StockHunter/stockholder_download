@@ -66,3 +66,20 @@ def getHtml(url):
     html = html_tmp.decode('gbk','ignore')
     page.close()
     return html
+
+def getNewestDateDB(stockcode):
+    Conn = pymysql.connect(host='localhost', port='', user='root', passwd='yuanwei111', db='stockinfo', charset='utf8')
+    Cur = Conn.cursor()
+    SQL1 = "select max(holder_date) from " \
+           "holderinfo where " \
+           "stockCode = '%s'" % stockcode
+    try:
+        Cur.execute(SQL1)
+    except Exception as e:
+        print(e)
+    Cur.execute(SQL1)
+    date_now = Cur.fetchone()
+    Cur.close()
+    Conn.close()
+    return date_now[0]
+

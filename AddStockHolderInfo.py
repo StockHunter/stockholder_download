@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 import pymysql
 import time
 import threading
-from com.ComMethod import GetAllStockCodes,ReadFile
+from com.ComMethod import GetAllStockCodes, ReadFile, getNewestDateDB
 
 global countOK
 global countNG
@@ -17,7 +17,9 @@ global StockCodesAll
 global BASE_FILEPATH
 global Local_Stock
 global ErrMsg
+global UpdateGenrate
 
+UpdateGenrate = [0, 1, 2, 3]
 Local_Stock = threading.local()
 g_StockCodesAll = []
 ERROR_LEN_LOG = [0]
@@ -281,68 +283,74 @@ def getholderInfo(obj):
 def updateHolderInfo(listObj,listDate):
     global g_StockCodesAll
     global ErrMsg
-    print("inser Data: %s" % listObj)
+    global UpdateGenrate
     for cnt1 in (range(len(listObj))):
         try:
             index1 = listObj[cnt1].index("OK")
             del listObj[cnt1][index1]
             len1 = len(listObj[cnt1])
-            for cnt2 in range(int(len1/4)):
-                if DEBUG_LOG == 1:
-                    print("code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s] " %
-                          (Local_Stock.code,
-                           listDate[cnt1*4],
-                           listObj[cnt1][cnt2*4],
-                           listObj[cnt1][cnt2*4+1],
-                           listObj[cnt1][cnt2*4+2],
-                           listObj[cnt1][cnt2*4+3]))
-                SQL = "insert into holderinfo(stockCode," \
-                                                "holder_date," \
-                                                "holder_date_no," \
-                                                "holder_name," \
-                                                "stock_mount," \
-                                                "stock_per) " \
-                                        "values ('%s'," \
-                                                "'%s'," \
-                                                "'%s'," \
-                                                "'%s'," \
-                                                "'%s'," \
-                                                "'%s')" % \
-                    (
-                        Local_Stock.code,
-                        DivDate(listDate[cnt1 * 4]),
-                        listObj[cnt1][cnt2 * 4],
-                        listObj[cnt1][cnt2 * 4 + 1].replace("'", "''"),
-                        listObj[cnt1][cnt2 * 4 + 2],
-                        listObj[cnt1][cnt2 * 4 + 3]
-                    )
-                print(SQL)
-                try:
-                    cur.execute(SQL)
-                except Exception as e:
-                    print(e)
-                    print("Err!! code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s] " %
-                          (Local_Stock.code,
-                           DivDate(listDate[cnt1*4]),
-                           listObj[cnt1][cnt2*4],
-                           listObj[cnt1][cnt2*4+1].replace("'", "''"),
-                           listObj[cnt1][cnt2*4+2],
-                           listObj[cnt1][cnt2*4+3])
-                          )
-                    ErrMsg.append("e:[%s] code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s]" %
-                                  (e,
-                                   Local_Stock.code,
-                                   DivDate(listDate[cnt1 * 4]),
-                                   listObj[cnt1][cnt2 * 4],
-                                   listObj[cnt1][cnt2 * 4 + 1].replace("'", "''"),
-                                   listObj[cnt1][cnt2 * 4 + 2],
-                                   listObj[cnt1][cnt2 * 4 + 3])
-                                  )
-                    conn.rollback()
+            listDate[cnt1*4] = DivDate(listDate[cnt1 * 4])
+            #判断网站来的数据是不是原本存在的数据
+            if listDate[cnt1*4] > getNewestDateDB(Local_Stock.code):
+                print("inser Data: %s" % listObj)
+                for cnt2 in range(int(len1/4)):
+                    if DEBUG_LOG == 1:
+                        print("code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s] " %
+                              (Local_Stock.code,
+                               listDate[cnt1*4],
+                               listObj[cnt1][cnt2*4],
+                               listObj[cnt1][cnt2*4+1],
+                               listObj[cnt1][cnt2*4+2],
+                               listObj[cnt1][cnt2*4+3]))
+                    SQL = "insert into holderinfo(stockCode," \
+                                                    "holder_date," \
+                                                    "holder_date_no," \
+                                                    "holder_name," \
+                                                    "stock_mount," \
+                                                    "stock_per) " \
+                                            "values ('%s'," \
+                                                    "'%s'," \
+                                                    "'%s'," \
+                                                    "'%s'," \
+                                                    "'%s'," \
+                                                    "'%s')" % \
+                        (
+                            Local_Stock.code,
+                            listDate[cnt1 * 4],
+                            listObj[cnt1][cnt2 * 4],
+                            listObj[cnt1][cnt2 * 4 + 1].replace("'", "''"),
+                            listObj[cnt1][cnt2 * 4 + 2],
+                            listObj[cnt1][cnt2 * 4 + 3]
+                        )
+                    print(SQL)
+                    try:
+                        cur.execute(SQL)
+                    except Exception as e:
+                        print(e)
+                        print("Err!! code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s] " %
+                              (Local_Stock.code,
+                               DivDate(listDate[cnt1*4]),
+                               listObj[cnt1][cnt2*4],
+                               listObj[cnt1][cnt2*4+1].replace("'", "''"),
+                               listObj[cnt1][cnt2*4+2],
+                               listObj[cnt1][cnt2*4+3])
+                              )
+                        ErrMsg.append("e:[%s] code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s]" %
+                                      (e,
+                                       Local_Stock.code,
+                                       listDate[cnt1 * 4],
+                                       listObj[cnt1][cnt2 * 4],
+                                       listObj[cnt1][cnt2 * 4 + 1].replace("'", "''"),
+                                       listObj[cnt1][cnt2 * 4 + 2],
+                                       listObj[cnt1][cnt2 * 4 + 3])
+                                      )
+                        conn.rollback()
+            else:
+                break
         except Exception as e:
             print(e)
             break
-        if cnt1 % 30 == 0:
+        if cnt1 % 20 == 0:
             conn.commit()
 
 def startReadAndExc(BaseFilePath = BASE_FILEPATH):
@@ -360,7 +368,7 @@ def startReadAndExc(BaseFilePath = BASE_FILEPATH):
                 print("code : %s" % stockcode)
             result = getHolderNum(fileInfo)
         # insert the HolderInfo data
-        nRet = updateHolderInfo(holderinfo_list,result)
+        nRet = updateHolderInfo(holderinfo_list, result)
 
 def run():
     fname = "D:\\python_SRC\\Stock_SRC\\Ver2.0\\AllHtmlData\\20170812\\"
