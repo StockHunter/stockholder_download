@@ -83,3 +83,30 @@ def getNewestDateDB(stockcode):
     Conn.close()
     return date_now[0]
 
+def getHolderNum(html):
+    reg = r"""colspan="4">(.*?)<"""
+    hd_num = re.compile(reg, re.S)
+    html = html.replace("\t", "")
+    html = html.replace("\n", "")
+    html = html.replace("\r", "")
+    num = re.findall(hd_num, html)
+    return num
+
+def DivDate(date):
+    date = date.replace("(", "")
+    date = date.replace(")", "")
+    date = date.replace("-", "")
+    return date
+
+def DivHldNum(HolderNum):
+    HolderNum = HolderNum.replace("(", "")
+    HolderNum = HolderNum.replace(")", "")
+    return HolderNum
+
+def DivAvgNum(AvgNum):
+    AvgNum = AvgNum.replace("(", "")
+    AvgNum = AvgNum.replace(")", "")
+    reNum = r'\d.*\d'
+    rulRegNum = re.compile(reNum)
+    AvgNum =re.findall(rulRegNum,AvgNum)
+    return AvgNum

@@ -371,17 +371,16 @@ def startReadAndExc(BaseFilePath = BASE_FILEPATH):
         nRet = updateHolderInfo(holderinfo_list, result)
 
 def run():
-    fname = "D:\\python_SRC\\Stock_SRC\\Ver2.0\\AllHtmlData\\20170812\\"
+    global record_thread
+    global g_StockCodesAll
     record_thread = []
-    SQL = "SELECT distinct(stock_code) from" \
-          " stockholdercnt"
     time_start = time.time()
-    cur.execute(SQL)
-    g_StockCodesAll = cur.fetchall()
-    rows_len = len(g_StockCodesAll)
+    g_StockCodesAll = GetAllStockCodes()
     print("Stock_sum:", g_StockCodesAll)
-    startReadAndExc(1)
+    nRet = startReadAndExc()
     conn.commit()
+    for em in ErrMsg:
+        print("ErrMsg:[%s]" % em)
 
 if __name__ == '__main__':
     record_thread = []
