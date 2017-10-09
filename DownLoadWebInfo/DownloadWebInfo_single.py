@@ -1,5 +1,5 @@
 import time
-from com.ComMethod import lGetStockCodes, WriteFile, getHtml
+from com.ComMethod import GetAllStockCodes, WriteFile, getHtml
 
 global FILEPATH_LOG
 global LOG
@@ -30,7 +30,7 @@ def run():
     global LOG
     print("GetWebInfo Start")
     lStockCode = []
-    lStockCode = lGetStockCodes()
+    lStockCode = GetAllStockCodes()
     nStockCodeListLen = len(lStockCode)
     if LOG == 1:
         print("nStockCodeListLen:", nStockCodeListLen)
@@ -41,7 +41,7 @@ def run():
 if __name__ == '__main__':
     print("GetWebInfo Start")
     lStockCode = []
-    lStockCode = lGetStockCodes()
+    lStockCode = GetAllStockCodes()
     nStockCodeListLen = len(lStockCode)
     if LOG == 1:
         print("nStockCodeListLen:", nStockCodeListLen)

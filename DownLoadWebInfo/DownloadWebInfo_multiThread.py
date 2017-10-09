@@ -1,5 +1,5 @@
 import time
-from com.ComMethod import lGetStockCodes, WriteFile, getHtml
+from com.ComMethod import GetAllStockCodes, WriteFile, getHtml
 import threading
 import os
 
@@ -50,11 +50,11 @@ def downLoadWebInfo(PathTmp):
     print("FilePath: " + PathTmp)
     print("time: %d " % (time.time() - local_stockCode.timeStart))
 
-def run(basePath = FILEPATH_BASE2, mode = "continue"):
+def run(basePath=FILEPATH_BASE2, mode="continue"):
     global list_StockCodes
     global record_thread
     print("GetWebInfo Start")
-    list_StockCodes = lGetStockCodes()
+    list_StockCodes = GetAllStockCodes()
     for k in range(THREAD_NUM):
         new_thread = threading.Thread(target=DownloadWebInfoStart, args=(basePath, mode))
         new_thread.start()
@@ -65,7 +65,7 @@ def run(basePath = FILEPATH_BASE2, mode = "continue"):
 
 if __name__ == '__main__':
     print("GetWebInfo Start")
-    list_StockCodes = lGetStockCodes()
+    list_StockCodes = GetAllStockCodes()
     for k in range(THREAD_NUM):
         new_thread = threading.Thread(target=DownloadWebInfoStart)
         new_thread.start()

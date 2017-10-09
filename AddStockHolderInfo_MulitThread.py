@@ -11,16 +11,18 @@ from com.ComMethod import GetAllStockCodes,ReadFile
 global countOK
 global countNG
 global DEBUG_LOG
-global ERROR_LEN_LOG
 global POPLIST_HOLDER_TYPE
 global StockCodesAll
 global BASE_FILEPATH
 global Local_Stock
 global ErrMsg
+global g_ThreadSum
+global mutex
 
+mutex = threading.Lock()
+g_ThreadSum = 3
 Local_Stock = threading.local()
 g_StockCodesAll = []
-ERROR_LEN_LOG = [0]
 DEBUG_LOG = 0
 countNG = 0
 countOK = 0
@@ -31,7 +33,7 @@ Header[
 global stockholder_info_url
 
 SQL = "no data"
-conn = pymysql.connect(host='localhost',port='',user='root',passwd='yuanwei111',db='stockinfo',charset='utf8')
+conn = pymysql.connect(host='localhost',port='',user='root',passwd='yuanwei111',db='stockinfoadv',charset='utf8')
 cur = conn.cursor()
 ErrMsg = []
 
@@ -131,7 +133,6 @@ def getHolderNum(html):
     return num
 
 def dataCheck(list1):
-    global ERROR_LEN_LOG
     global DEBUG_LOG
     global countOK
     global countNG
@@ -143,21 +144,25 @@ def dataCheck(list1):
                 print("Data Error!!! errLen[%d]" % len1 )
                 print("Count[%d]: %s " % (a,list1[a]))
                 errString = "Count[" + str(a) + "] len[" + str(len1) + "]  code[" + Local_Stock.code + "]: " + str(list1[a])
-                ERROR_LEN_LOG.append(errString)
+                err_log.append(errString)
                 print("Sum Error Info:")
-                print(ERROR_LEN_LOG)
-                for n in range(len(ERROR_LEN_LOG)):
-                    print(ERROR_LEN_LOG[n])
+                print(err_log)
+                for errlog in err_log:
+                    print(errlog)
             if DEBUG_LOG == 1:
                 print("=============InputData Start===============")
                 for n in range(len(list1)):
                     print("Count[%d]:%s " % (n,list1[n]))
                 print("=============InputData End  ===============")
+            mutex.acqiure()
             countNG = countNG + 1
             print("countOK: %d,countNG:%d code:%s " % (countOK, countNG, Local_Stock.code))
+            mutex.release()
             break
+        mutex.acqiure()
         countOK = countOK + 1
         print("countOK: %d,countNG:%d code:%s " % (countOK, countNG, Local_Stock.code))
+        mutex.release()
         list1[a].append("OK")
     return list1
 
@@ -293,21 +298,11 @@ def updateHolderInfo(listObj,listDate):
                           (Local_Stock.code,
                            listDate[cnt1*4],
                            listObj[cnt1][cnt2*4],
-                           listObj[cnt1][cnt2*4+1],
+                           listObj[cnt1][cnt2*4+1].replace("'", "''"),
                            listObj[cnt1][cnt2*4+2],
                            listObj[cnt1][cnt2*4+3]))
-                SQL = "insert into holderinfo(stockCode," \
-                                                "holder_date," \
-                                                "holder_date_no," \
-                                                "holder_name," \
-                                                "stock_mount," \
-                                                "stock_per) " \
-                                        "values ('%s'," \
-                                                "'%s'," \
-                                                "'%s'," \
-                                                "'%s'," \
-                                                "'%s'," \
-                                                "'%s')" % \
+                SQL = "insert into holderinfo(stockCode,holder_date,holder_date_no,holder_name,stock_mount,stock_per) " \
+                "values ('%s','%s','%s','%s','%s','%s')" % \
                     (
                         Local_Stock.code,
                         DivDate(listDate[cnt1 * 4]),
@@ -329,12 +324,13 @@ def updateHolderInfo(listObj,listDate):
                            listObj[cnt1][cnt2*4+2],
                            listObj[cnt1][cnt2*4+3])
                           )
+
                     ErrMsg.append("e:[%s] code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s]" %
                                   (e,
                                    Local_Stock.code,
                                    DivDate(listDate[cnt1 * 4]),
                                    listObj[cnt1][cnt2 * 4],
-                                   listObj[cnt1][cnt2 * 4 + 1].replace("'", "''"),
+                                   listObj[cnt1][cnt2 * 4 + 1],
                                    listObj[cnt1][cnt2 * 4 + 2],
                                    listObj[cnt1][cnt2 * 4 + 3])
                                   )
@@ -359,8 +355,8 @@ def startReadAndExc(BaseFilePath = BASE_FILEPATH):
             if holderinfo_list == False:
                 print("code : %s" % stockcode)
             result = getHolderNum(fileInfo)
-        # insert the HolderInfo data
-        nRet = updateHolderInfo(holderinfo_list,result)
+            # insert the HolderInfo data
+            nRet = updateHolderInfo(holderinfo_list,result)
 
 def run():
     fname = "D:\\python_SRC\\Stock_SRC\\Ver2.0\\AllHtmlData\\20170812\\"
@@ -380,7 +376,12 @@ if __name__ == '__main__':
     time_start = time.time()
     g_StockCodesAll = GetAllStockCodes()
     print("Stock_sum:", g_StockCodesAll)
-    nRet = startReadAndExc()
+    for threadCnt in range(g_ThreadSum):
+        new_thread = threading.Thread(target=startReadAndExc)
+        new_thread.start()
+        record_thread.append(new_thread)
+    for threadSon in record_thread:
+        threadSon.join
     conn.commit()
     for em in ErrMsg:
         print("ErrMsg:[%s]" % em)

@@ -14,7 +14,18 @@ def WriteFile(fname,data):
     else:
         return False
 
-def lGetStockCodes():
+def ReadFile(fname):
+    try:
+        f = open(fname, 'r')
+        if f:
+            return f.read()
+        else:
+            return False
+    except IOError as err:
+        print(str(err))
+        return False
+
+def GetAllStockCodes():
     conn = pymysql.connect(host='localhost',port='',user='root',passwd='yuanwei111',db='stockinfo',charset='utf8')
     cur = conn.cursor()
     lStockCode = []
