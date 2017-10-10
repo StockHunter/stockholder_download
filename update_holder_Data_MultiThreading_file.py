@@ -8,6 +8,7 @@ import threading
 import os
 global BASE_FILEPATH
 global mutex
+global time_start
 
 DATE = 0
 ANNOUNCE_DATE = 1
@@ -136,7 +137,7 @@ record_thread = []
 g_StockCodesAll = GetAllStockCodes()
 rows_len = len(g_StockCodesAll)
 print("Stock_sum:", rows_len)
-
+time_start = time.time()
 print(g_StockCodesAll)
 
 for k in range(1):

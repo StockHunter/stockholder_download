@@ -23,7 +23,7 @@ UpdateGenrate = [0, 1, 2, 3]
 Local_Stock = threading.local()
 g_StockCodesAll = []
 ERROR_LEN_LOG = [0]
-DEBUG_LOG = 0
+DEBUG_LOG = 1
 countNG = 0
 countOK = 0
 BASE_FILEPATH = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171001\\"
@@ -107,7 +107,7 @@ POPLIST_HOLDER_TYPE = ["未流通法人股", "不详", "境内法人股", '截�
            "发起人国家股，发起人境内法人股", "限售流通股\x7f","发起人国家股，定向法人境内法人股","法人股，优先股","募集法人股、流通股","可转让股份,国有股",
             "社公公众股","自然人股","非国有股,社会法人股","自然人股`","自然人非流通股","自然人股及内部职工股","自然人股,社会公众股","流通股、社会法人股",
             "境内法人股","NET置换后形成的股份","法人","固有法人股","置换后形成的股份","流通A股、社会法人股","境内法人股","国有法人股,A股","国有法人股,A股流通股",
-            "境内法人股","境内法人股","境内法人股`"]
+            "境内法人股","境内法人股","境内法人股`","自然人股,可转让股份"]
 
 def DivDate(date):
     date = date.replace("-", "")
@@ -224,31 +224,34 @@ def cutListToArrayList(countSeason,ListObj):
     listArrayObj = [[0] for count in range(countSeason-1)]
     for count in range(1, countSeason):
         index1 = ListObj.index("1")
+        if DEBUG_LOG == 1:
+            print("ListObj[%d] : [%s]" %(index1+1, ListObj[index1+1]))
         if (ListObj[index1+1] > "9"):
             ListObj[index1] = ListObj[index1].replace('1',"*")
             index2 = ListObj.index("1")
             if index2 < len(ListObj)-1:
                 while ListObj[index2+1] <= "9":
-                    if index2 < len(ListObj) -1 :
-                        countPers1 = countPers1 +1
+                    if index2 < len(ListObj) - 1:
+                        countPers1 = countPers1 + 1
                         ListObj[index2] = ListObj[index2].replace('1', "*")
                         index2 = ListObj.index("1")
                         if DEBUG_LOG == 1:
-                            print("I count:%d countSeason:%d" % (count, countSeason))
-                            print("I countPers1:%d, len:%d" % (countPers1, len(ListObj)))
-                            print("I index1:%s,list[index1]:%s" % (index1, ListObj[index1]))
-                            print("I index2:%s,list[index2]:%s" % (index2, ListObj[index2]))
-                            print("I listArrayObj[%d]:%s" % (count-1, ListObj[index1:index2]))
-                            print("I ListObj[index2]:%s" % ListObj[index2])
+                            print("I count:[%d] countSeason:[%d]" % (count, countSeason))
+                            print("I countPers1:[%d], len:[%d]" % (countPers1, len(ListObj)))
+                            print("I index1:[%s],list[index1]:[%s]" % (index1, ListObj[index1]))
+                            print("I index2:[%s],list[index2]:[%s]" % (index2, ListObj[index2]))
+                            print("I listArrayObj[%d]:[%s]" % (count-1, ListObj[index1:index2]))
+                            print("I ListObj[index2]:[%s]" % ListObj[index2])
                         if index2 == len(ListObj)-1:
                             break
+                    print("ListObj[%d] : [%s]" % (index2+1, ListObj[index2+1]))
             listArrayObj[count - 1] = ListObj[index1:index2]
             if DEBUG_LOG == 1:
                 print("II count:%d countSeason:%d" % (count, countSeason))
                 print("II index1:%d, len:%d " % (index1,len(ListObj)))
                 print("II index2:%d, len:%d " % (index2,len(ListObj)))
                 print("II listArrayObj[%d]:%s" % (count-1,ListObj[index1:index2]))
-                print("II ListObj[index1+1]: %s " % ListObj[index1+1])
+                print("II ListObj[%d]: %s " % (index1+1, ListObj[index1+1]))
         if DEBUG_LOG == 1:
             print("III count:%d countSeason:%d" % (count, countSeason))
             print("III index2:%d, len:%d " % (index2,len(ListObj)))
@@ -272,79 +275,41 @@ def getholderInfo(obj):
     holderinfo_orig.append("1")
     countSeason = holderinfo_orig.count("1") - 1
     holderinfo_list = cutListToArrayList(countSeason, holderinfo_orig)
+    if DEBUG_LOG == 1:
+        for tmp in holderinfo_list:
+            print("tmp: %s" % tmp)
 #删除链表里面''成员；
     holderinfo_list = delErrCode(holderinfo_list)
 #转换链表成员from * to 1
     holderinfo_list = swichMarkTo1(holderinfo_list)
+    if DEBUG_LOG == 1:
+        for tmp in holderinfo_list:
+            print("tmp: %s" % tmp)
 #检验链表长度并添加OK，NG标志
     holderinfo_list_OK_NG = dataCheck(holderinfo_list)
+    if DEBUG_LOG == 1:
+        for tmp2 in holderinfo_list_OK_NG:
+            print("tmp2: %s" % tmp2)
     return holderinfo_list_OK_NG
 
 def updateHolderInfo(listObj,listDate):
-    global g_StockCodesAll
     global ErrMsg
-    global UpdateGenrate
+    newestDataDB = getNewestDateDB(Local_Stock.code)
+    if newestDataDB == None:
+        newStockflag = 1
     for cnt1 in (range(len(listObj))):
         try:
             index1 = listObj[cnt1].index("OK")
             del listObj[cnt1][index1]
             len1 = len(listObj[cnt1])
             listDate[cnt1*4] = DivDate(listDate[cnt1 * 4])
-            #判断网站来的数据是不是原本存在的数据
-            if listDate[cnt1*4] > getNewestDateDB(Local_Stock.code):
-                print("inser Data: %s" % listObj)
-                for cnt2 in range(int(len1/4)):
-                    if DEBUG_LOG == 1:
-                        print("code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s] " %
-                              (Local_Stock.code,
-                               listDate[cnt1*4],
-                               listObj[cnt1][cnt2*4],
-                               listObj[cnt1][cnt2*4+1],
-                               listObj[cnt1][cnt2*4+2],
-                               listObj[cnt1][cnt2*4+3]))
-                    SQL = "insert into holderinfo(stockCode," \
-                                                    "holder_date," \
-                                                    "holder_date_no," \
-                                                    "holder_name," \
-                                                    "stock_mount," \
-                                                    "stock_per) " \
-                                            "values ('%s'," \
-                                                    "'%s'," \
-                                                    "'%s'," \
-                                                    "'%s'," \
-                                                    "'%s'," \
-                                                    "'%s')" % \
-                        (
-                            Local_Stock.code,
-                            listDate[cnt1 * 4],
-                            listObj[cnt1][cnt2 * 4],
-                            listObj[cnt1][cnt2 * 4 + 1].replace("'", "''"),
-                            listObj[cnt1][cnt2 * 4 + 2],
-                            listObj[cnt1][cnt2 * 4 + 3]
-                        )
-                    print(SQL)
-                    try:
-                        cur.execute(SQL)
-                    except Exception as e:
-                        print(e)
-                        print("Err!! code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s] " %
-                              (Local_Stock.code,
-                               DivDate(listDate[cnt1*4]),
-                               listObj[cnt1][cnt2*4],
-                               listObj[cnt1][cnt2*4+1].replace("'", "''"),
-                               listObj[cnt1][cnt2*4+2],
-                               listObj[cnt1][cnt2*4+3])
-                              )
-                        ErrMsg.append("e:[%s] code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s]" %
-                                      (e,
-                                       Local_Stock.code,
-                                       listDate[cnt1 * 4],
-                                       listObj[cnt1][cnt2 * 4],
-                                       listObj[cnt1][cnt2 * 4 + 1].replace("'", "''"),
-                                       listObj[cnt1][cnt2 * 4 + 2],
-                                       listObj[cnt1][cnt2 * 4 + 3])
-                                      )
-                        conn.rollback()
+            if DEBUG_LOG == 1:
+                print("listDate[%d] : [%s]" % (cnt1*4, listDate[cnt1*4]))
+            #判断是不是新股票的数据
+            if newStockflag == 1:
+                insertData(listObj, listDate, len1, cnt1)
+            elif listDate[cnt1*4] > newestDataDB:       #判断网站来的数据是不是原本存在的数据
+                insertData(listObj, listDate, len1, cnt1)
             else:
                 break
         except Exception as e:
@@ -352,6 +317,63 @@ def updateHolderInfo(listObj,listDate):
             break
         if cnt1 % 20 == 0:
             conn.commit()
+
+def insertData(listObj, listDate, len1, cnt1):
+    global ErrMsg
+    print("insert Data: %s" % listObj)
+    for cnt2 in range(int(len1 / 4)):
+        if DEBUG_LOG == 1:
+            print("code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s] " %
+                  (Local_Stock.code,
+                   listDate[cnt1 * 4],
+                   listObj[cnt1][cnt2 * 4],
+                   listObj[cnt1][cnt2 * 4 + 1],
+                   listObj[cnt1][cnt2 * 4 + 2],
+                   listObj[cnt1][cnt2 * 4 + 3]))
+        SQL = "insert into holderinfo(stockCode," \
+              "holder_date," \
+              "holder_date_no," \
+              "holder_name," \
+              "stock_mount," \
+              "stock_per) " \
+              "values ('%s'," \
+              "'%s'," \
+              "'%s'," \
+              "'%s'," \
+              "'%s'," \
+              "'%s')" % \
+              (
+                  Local_Stock.code,
+                  listDate[cnt1 * 4],
+                  listObj[cnt1][cnt2 * 4],
+                  listObj[cnt1][cnt2 * 4 + 1].replace("'", "''"),
+                  listObj[cnt1][cnt2 * 4 + 2],
+                  listObj[cnt1][cnt2 * 4 + 3]
+              )
+        print(SQL)
+        try:
+            cur.execute(SQL)
+        except Exception as e:
+            print(e)
+            print("Err!! code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s] " %
+                  (Local_Stock.code,
+                   DivDate(listDate[cnt1 * 4]),
+                   listObj[cnt1][cnt2 * 4],
+                   listObj[cnt1][cnt2 * 4 + 1].replace("'", "''"),
+                   listObj[cnt1][cnt2 * 4 + 2],
+                   listObj[cnt1][cnt2 * 4 + 3])
+                  )
+            ErrMsg.append("e:[%s] code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s]" %
+                          (e,
+                           Local_Stock.code,
+                           listDate[cnt1 * 4],
+                           listObj[cnt1][cnt2 * 4],
+                           listObj[cnt1][cnt2 * 4 + 1].replace("'", "''"),
+                           listObj[cnt1][cnt2 * 4 + 2],
+                           listObj[cnt1][cnt2 * 4 + 3])
+                          )
+            conn.rollback()
+
 
 def startReadAndExc(BaseFilePath = BASE_FILEPATH):
     global g_StockCodesAll
@@ -361,14 +383,16 @@ def startReadAndExc(BaseFilePath = BASE_FILEPATH):
         Local_Stock.code = stockcode
         FileFullPath = BaseFilePath + stockcode + ".txt"
         fileInfo = ReadFile(FileFullPath)
-        if fileInfo != False:
-            obj = transToBS_stockBasic(fileInfo)
-            holderinfo_list = getholderInfo(obj)
-            if holderinfo_list == False:
-                print("code : %s" % stockcode)
-            result = getHolderNum(fileInfo)
-        # insert the HolderInfo data
-        nRet = updateHolderInfo(holderinfo_list, result)
+        if stockcode == "600878":
+            if fileInfo != False:
+                obj = transToBS_stockBasic(fileInfo)
+                holderinfo_list = getholderInfo(obj)
+                if holderinfo_list == False:
+                    print("code : %s" % stockcode)
+                result = getHolderNum(fileInfo)
+                print("result: [%s]" % result)
+            # insert the HolderInfo data
+            nRet = updateHolderInfo(holderinfo_list, result)
 
 def run():
     global record_thread
