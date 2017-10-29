@@ -1,4 +1,6 @@
 import time
+import sys
+sys.path.append("..")
 from com.ComMethod import GetAllStockCodes, WriteFile, getHtml
 import threading
 import os
@@ -13,10 +15,10 @@ global record_thread
 
 LOG = 1
 list_StockCodes = []
-FILEPATH_BASE2 = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171001\\"
+FILEPATH_BASE2 = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171028\\"
 local_stockCode = threading.local()
 mutex = threading.Lock()
-THREAD_NUM = 2
+THREAD_NUM = 5
 record_thread = []
 
 def DownloadWebInfoStart(sFilePath = FILEPATH_BASE2, mode = "continue"):
@@ -24,13 +26,14 @@ def DownloadWebInfoStart(sFilePath = FILEPATH_BASE2, mode = "continue"):
     global list_StockCodes
     while len(list_StockCodes) > 0:
         mutex.acquire()
-        stockCode = list_StockCodes.pop()
+        try:
+            stockCode = list_StockCodes.pop()
+        except Exception as err:
+            print(err)
+            break
         mutex.release()
-        timeStart1 = time.time()
         stockCode = str(stockCode).zfill(6)
         local_stockCode.stock = stockCode
-        local_stockCode.timeStart = timeStart1
-        print("ThreadName:[%s], stock:[%s]" % (threading.current_thread().name, local_stockCode.stock))
         PathTmp = sFilePath + stockCode + ".txt"
         if mode == "continue":
             if os.path.exists(PathTmp) == False:
@@ -43,12 +46,15 @@ def downLoadWebInfo(PathTmp):
     stockCode = local_stockCode.stock
     web = "http://vip.stock.finance.sina.com.cn/corp/go.php/vCI_StockHolder/stockid/%s.phtml" \
           % (stockCode)
-    print("web:[%s]" % web)
-    time.sleep(6)
+    print("ThreadName:[%s], web:[%s]" % (threading.current_thread().name, web))
+    mutex.acquire()
+    time.sleep(5)
+    mutex.release()
+    timeStart1 = time.time()
     htmlinfo = getHtml(web)
     WriteFile(PathTmp, htmlinfo)
-    print("FilePath: " + PathTmp)
-    print("time: %d " % (time.time() - local_stockCode.timeStart))
+    print("ThreadName:[%s], FilePath: %s" % (threading.current_thread().name, PathTmp))
+    print("ThreadName:[%s], time:[%d]" % (threading.current_thread().name, time.time() - timeStart1))
 
 def run(basePath=FILEPATH_BASE2, mode="continue"):
     global list_StockCodes

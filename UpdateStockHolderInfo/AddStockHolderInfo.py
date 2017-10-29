@@ -6,6 +6,8 @@ from bs4 import BeautifulSoup
 import pymysql
 import time
 import threading
+import sys
+sys.path.append("..")
 from com.ComMethod import GetAllStockCodes, ReadFile, getNewestDateDB
 
 global countOK
@@ -18,15 +20,17 @@ global BASE_FILEPATH
 global Local_Stock
 global ErrMsg
 global UpdateGenrate
+global InsertStockCode
 
 UpdateGenrate = [0, 1, 2, 3]
 Local_Stock = threading.local()
 g_StockCodesAll = []
 ERROR_LEN_LOG = [0]
-DEBUG_LOG = 1
+DEBUG_LOG = 2
 countNG = 0
 countOK = 0
-BASE_FILEPATH = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171001\\"
+BASE_FILEPATH = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171021\\"
+InsertStockCode = []
 Header = {}
 Header[
     'User-Agent'] = 'Mozilla/5.0 (Linux; Android 4.1.1; Nexus 7 Build/JRO03D) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166 Safari/535.19'
@@ -159,7 +163,7 @@ def dataCheck(list1):
             print("countOK: %d,countNG:%d code:%s " % (countOK, countNG, Local_Stock.code))
             break
         countOK = countOK + 1
-        print("countOK: %d,countNG:%d code:%s " % (countOK, countNG, Local_Stock.code))
+#        print("countOK: %d,countNG:%d code:%s " % (countOK, countNG, Local_Stock.code))
         list1[a].append("OK")
     return list1
 
@@ -205,6 +209,7 @@ def delNotUsedinfo(listObj):
     allDataLen = len(listObj)
     itm = 0
     while True:
+        print("listObj[%d]:[%s]" % (itm,listObj[itm]))
         if listObj[itm] in POPLIST_HOLDER_TYPE:
             del listObj[itm]
             itm = itm - 1
@@ -244,7 +249,6 @@ def cutListToArrayList(countSeason,ListObj):
                             print("I ListObj[index2]:[%s]" % ListObj[index2])
                         if index2 == len(ListObj)-1:
                             break
-                    print("ListObj[%d] : [%s]" % (index2+1, ListObj[index2+1]))
             listArrayObj[count - 1] = ListObj[index1:index2]
             if DEBUG_LOG == 1:
                 print("II count:%d countSeason:%d" % (count, countSeason))
@@ -257,7 +261,6 @@ def cutListToArrayList(countSeason,ListObj):
             print("III index2:%d, len:%d " % (index2,len(ListObj)))
             print("III listArrayObj[%d]:%s" % (count-1, ListObj[index1:index2]))
             print("****ALL:%s **** " % ListObj)
-        #        print("Last!!list[count-1]:%s" % holderinfo_orig[index1:index2+10])
         if count == countSeason - countPers1:
             break
     return listArrayObj
@@ -295,6 +298,7 @@ def getholderInfo(obj):
 def updateHolderInfo(listObj,listDate):
     global ErrMsg
     newestDataDB = getNewestDateDB(Local_Stock.code)
+    newStockflag = 0
     if newestDataDB == None:
         newStockflag = 1
     for cnt1 in (range(len(listObj))):
@@ -320,7 +324,9 @@ def updateHolderInfo(listObj,listDate):
 
 def insertData(listObj, listDate, len1, cnt1):
     global ErrMsg
+    global InsertStockCode
     print("insert Data: %s" % listObj)
+    InsertStockCode.append(Local_Stock.code)
     for cnt2 in range(int(len1 / 4)):
         if DEBUG_LOG == 1:
             print("code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s] " %
@@ -350,7 +356,8 @@ def insertData(listObj, listDate, len1, cnt1):
                   listObj[cnt1][cnt2 * 4 + 2],
                   listObj[cnt1][cnt2 * 4 + 3]
               )
-        print(SQL)
+        if DEBUG_LOG == 1:
+            print(SQL)
         try:
             cur.execute(SQL)
         except Exception as e:
@@ -381,18 +388,15 @@ def startReadAndExc(BaseFilePath = BASE_FILEPATH):
         stockcode = g_StockCodesAll.pop()
         stockcode = str(stockcode).zfill(6)
         Local_Stock.code = stockcode
+        if stockcode > "600000":
+            continue
         FileFullPath = BaseFilePath + stockcode + ".txt"
         fileInfo = ReadFile(FileFullPath)
-        if stockcode == "600878":
-            if fileInfo != False:
-                obj = transToBS_stockBasic(fileInfo)
-                holderinfo_list = getholderInfo(obj)
-                if holderinfo_list == False:
-                    print("code : %s" % stockcode)
-                result = getHolderNum(fileInfo)
-                print("result: [%s]" % result)
-            # insert the HolderInfo data
-            nRet = updateHolderInfo(holderinfo_list, result)
+        obj = transToBS_stockBasic(fileInfo)
+        holderinfo_list = getholderInfo(obj)
+        result = getHolderNum(fileInfo)
+        # insert the HolderInfo data
+        nRet = updateHolderInfo(holderinfo_list, result)
 
 def run():
     global record_thread
@@ -412,6 +416,7 @@ if __name__ == '__main__':
     g_StockCodesAll = GetAllStockCodes()
     print("Stock_sum:", g_StockCodesAll)
     nRet = startReadAndExc()
+    print("InsertStockCode: [%s] " % InsertStockCode)
     conn.commit()
     for em in ErrMsg:
         print("ErrMsg:[%s]" % em)

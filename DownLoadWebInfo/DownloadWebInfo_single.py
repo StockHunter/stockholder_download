@@ -1,10 +1,12 @@
 import time
+import sys
+sys.path.append("..")
 from com.ComMethod import GetAllStockCodes, WriteFile, getHtml
 
 global FILEPATH_LOG
 global LOG
 LOG = 1
-FILEPATH_BASE2 = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171001\\"
+FILEPATH_BASE2 = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171014\\"
 
 def DownloadWebInfo(list_rows, sFilePath = FILEPATH_BASE2):
     global LOG
@@ -14,17 +16,15 @@ def DownloadWebInfo(list_rows, sFilePath = FILEPATH_BASE2):
     for stockCode in list_rows:
         print ("code:[%s]" % stockCode)
         stockCode = str(stockCode).zfill(6)
-        if stockCode > "600703" and stockCode < "603355":
-#        if stockCode > "600323" or stockCode < "600000":
-            web = "http://vip.stock.finance.sina.com.cn/corp/go.php/vCI_StockHolder/stockid/%s.phtml" \
-                           % (stockCode)
-            print("web:[%s]" % web)
-            timeStart1 = time.time()
-            htmlinfo = getHtml(web)
-            PathTmp = sFilePath + stockCode + ".txt"
-            print("FilePath: " + PathTmp)
-            WriteFile(PathTmp, htmlinfo)
-            print("time: %d " % (time.time() - timeStart1))
+        web = "http://vip.stock.finance.sina.com.cn/corp/go.php/vCI_StockHolder/stockid/%s.phtml" \
+                       % (stockCode)
+        print("web:[%s]" % web)
+        timeStart1 = time.time()
+        htmlinfo = getHtml(web)
+        PathTmp = sFilePath + stockCode + ".txt"
+        print("FilePath: " + PathTmp)
+        WriteFile(PathTmp, htmlinfo)
+        print("time: %d " % (time.time() - timeStart1))
 
 def run():
     global LOG

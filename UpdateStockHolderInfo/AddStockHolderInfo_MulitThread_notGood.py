@@ -26,7 +26,7 @@ g_StockCodesAll = []
 DEBUG_LOG = 0
 countNG = 0
 countOK = 0
-BASE_FILEPATH = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171001\\"
+BASE_FILEPATH = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171014\\"
 Header = {}
 Header[
     'User-Agent'] = 'Mozilla/5.0 (Linux; Android 4.1.1; Nexus 7 Build/JRO03D) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166 Safari/535.19'

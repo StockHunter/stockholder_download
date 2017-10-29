@@ -3,6 +3,8 @@ import urllib.request
 import pymysql
 import time
 import chardet
+import sys
+sys.path.append("..")
 from com.ComMethod import *
 import threading
 import os
@@ -16,7 +18,7 @@ STOCK_HOLDER_INFO = 2
 STOCK_AVG_NUM = 3
 FILEPATH_BASE = "D:\\python_SRC\\Stock_SRC\\Ver2.0\\log\\"
 FILEPATH_HTMLDATA_BASE = "D:\\python_SRC\\Stock_SRC\\Ver2.0\\htmldata\\"
-BASE_FILEPATH = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171001\\"
+BASE_FILEPATH = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171021\\"
 mutex = threading.Lock()
 
 CNT = 0
@@ -26,14 +28,6 @@ SQL = "no data"
 conn = pymysql.connect(host='localhost',port='',user='root',passwd='yuanwei111',db='stockinfo',charset='utf8')
 cur = conn.cursor()
 
-def WriteFile(fname,data):
-    f = open(fname, 'a')
-    if f:
-        f.write(data)
-        f.close()
-    else:
-        return False
-
 #stockcode
 def updateStockHolderCnt(tid):
     global DATE
@@ -41,7 +35,6 @@ def updateStockHolderCnt(tid):
     global STOCK_HOLDER_INFO
     global STOCK_AVG_NUM
     global LOG
-    global CNT
     global FILEPATH_LOG
     global FILEPATH_BASE
     global FILEPATH_HTMLDATA_BASE
@@ -94,34 +87,42 @@ def updateStockHolderCnt(tid):
         print("%s, threading:%d ,mutex.acquire2" % (stockcode, tid))
         cur.execute(SQL2)
         date_now = cur.fetchone()
-        if date > date_now[0] and stockAvgNum != 0 and stockHolderNum != 0:
-            date_now_time = time.localtime()
-            updateTime = "%d%02d%02d" % (date_now_time.tm_year, date_now_time.tm_mon, date_now_time.tm_mday)
-            SQL3 = "insert into stockholdercnt(stock_code,holder_date,holder_date_announce,holder_cnt,stock_cnt_one_holder,update_Time) " \
-                   "values (%s,%s,%s,%d,%d,%s)" % (stockcode, date, announce_date, stockHolderNum, stockAvgNum, updateTime)
-            try:
-                cur.execute(SQL3)
-            except Exception as e:
-                print(e)
-                print("stock_code(%s),holder_date(%s),holder_date_announce(%s),holder_cnt(%d),stock_cnt_one_holder(%d)"
-                      % (stockcode, date, announce_date, stockHolderNum, stockAvgNum))
-            FILEPATH_LOG = "%s%d%02d%02d" \
-                    % (FILEPATH_BASE, date_now_time.tm_year, date_now_time.tm_mon, date_now_time.tm_mday) + ".txt"
-            logData = "%s    %s    %s    %d    %d \n" % (stockcode, date, announce_date, stockHolderNum, stockAvgNum)
-            if LOG == 1:
-                print(logData)
-            CNT = CNT + 1
-            if CNT % 1 == 0:
-                iFunRet = WriteFile(FILEPATH_LOG, logData)
-                print("WriteFile: %s by tid:%d " % (logData, tid))
-                if iFunRet == False:
-                    print("Error!! Write file failed!")
-                    exit()
-                conn.commit()
+        if date_now[0] == None:
+            insertDate(stockcode,date,announce_date,stockHolderNum,stockAvgNum,tid)
+        elif date > date_now[0] and stockAvgNum != 0 and stockHolderNum != 0:
+            insertDate(stockcode,date,announce_date,stockHolderNum,stockAvgNum,tid)
         else:
             print("No need to update! date(%s),date_now[0](%s),stockAvgNum(%d),stockHolderNum(%d)" % (date,date_now[0],stockAvgNum,stockHolderNum))
         mutex.release()
         print("%s, threading:%d ,mutex.release2" % (stockcode, tid))
+
+def insertDate(stockcode,date,announce_date,stockHolderNum,stockAvgNum,tid):
+    global CNT
+    global FILEPATH_LOG
+    global LOG
+    date_now_time = time.localtime()
+    updateTime = "%d%02d%02d" % (date_now_time.tm_year, date_now_time.tm_mon, date_now_time.tm_mday)
+    SQL3 = "insert into stockholdercnt(stock_code,holder_date,holder_date_announce,holder_cnt,stock_cnt_one_holder,update_Time) " \
+           "values (%s,%s,%s,%d,%d,%s)" % (stockcode, date, announce_date, stockHolderNum, stockAvgNum, updateTime)
+    try:
+        cur.execute(SQL3)
+    except Exception as e:
+        print(e)
+        print("stock_code(%s),holder_date(%s),holder_date_announce(%s),holder_cnt(%d),stock_cnt_one_holder(%d)"
+              % (stockcode, date, announce_date, stockHolderNum, stockAvgNum))
+    FILEPATH_LOG = "%s%d%02d%02d" \
+                   % (FILEPATH_BASE, date_now_time.tm_year, date_now_time.tm_mon, date_now_time.tm_mday) + ".txt"
+    logData = "%s    %s    %s    %d    %d \n" % (stockcode, date, announce_date, stockHolderNum, stockAvgNum)
+    if LOG == 1:
+        print(logData)
+    CNT = CNT + 1
+    if CNT % 1 == 0:
+        iFunRet = WriteFile(FILEPATH_LOG, logData)
+        print("WriteFile: %s by tid:%d " % (logData, tid))
+        if iFunRet == False:
+            print("Error!! Write file failed!")
+            exit()
+        conn.commit()
 
 def updateEnd():
     global time_start
@@ -140,7 +141,7 @@ print("Stock_sum:", rows_len)
 time_start = time.time()
 print(g_StockCodesAll)
 
-for k in range(1):
+for k in range(8):
     new_thread = threading.Thread(target=updateStockHolderCnt, args=(k,))
     new_thread.start()
     record_thread.append(new_thread)

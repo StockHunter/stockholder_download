@@ -7,7 +7,7 @@ import pymysql
 import time
 
 def WriteFile(fname,data):
-    f = open(fname, 'w')
+    f = open(fname, 'a')
     if f:
         f.write(data)
         f.close()
@@ -29,8 +29,8 @@ def GetAllStockCodes():
     conn = pymysql.connect(host='localhost',port='',user='root',passwd='yuanwei111',db='stockinfo',charset='utf8')
     cur = conn.cursor()
     lStockCode = []
-    SQL = "SELECT distinct(stock_code) from" \
-          " stockholdercnt"
+    SQL = "SELECT stocknum from" \
+          " stocklist"
     cur.execute(SQL)
     rows = cur.fetchall()
     for row in rows:
@@ -110,3 +110,11 @@ def DivAvgNum(AvgNum):
     rulRegNum = re.compile(reNum)
     AvgNum =re.findall(rulRegNum,AvgNum)
     return AvgNum
+
+#codec swicth
+def Code_detect(url):
+    urldet = getHtml(url)
+    if (urldet != -1):
+        codede = chardet.detect(urldet)['encoding']
+        print('%s <- %s' %(url,codede))
+        return codede
