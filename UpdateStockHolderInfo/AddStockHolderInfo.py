@@ -1,7 +1,5 @@
 # get web all data
 import re
-from urllib.parse import urljoin
-import urllib.request
 from bs4 import BeautifulSoup
 import pymysql
 import time
@@ -21,6 +19,8 @@ global Local_Stock
 global ErrMsg
 global UpdateGenrate
 global InsertStockCode
+global mutex
+global THREAD_NUM
 
 UpdateGenrate = [0, 1, 2, 3]
 Local_Stock = threading.local()
@@ -29,16 +29,14 @@ ERROR_LEN_LOG = [0]
 DEBUG_LOG = 2
 countNG = 0
 countOK = 0
-BASE_FILEPATH = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171021\\"
+THREAD_NUM = 5
+BASE_FILEPATH = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171028\\"
+mutex = threading.Lock()
 InsertStockCode = []
 Header = {}
 Header[
     'User-Agent'] = 'Mozilla/5.0 (Linux; Android 4.1.1; Nexus 7 Build/JRO03D) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.166 Safari/535.19'
-global stockholder_info_url
-
 SQL = "no data"
-conn = pymysql.connect(host='localhost',port='',user='root',passwd='yuanwei111',db='stockinfo',charset='utf8')
-cur = conn.cursor()
 ErrMsg = []
 
 POPLIST_HOLDER_TYPE = ["未流通法人股", "不详", "境内法人股", '截至日期', "公告日期", "股东说明", "股东总数", "境外法人股",
@@ -209,7 +207,6 @@ def delNotUsedinfo(listObj):
     allDataLen = len(listObj)
     itm = 0
     while True:
-        print("listObj[%d]:[%s]" % (itm,listObj[itm]))
         if listObj[itm] in POPLIST_HOLDER_TYPE:
             del listObj[itm]
             itm = itm - 1
@@ -274,6 +271,9 @@ def getholderInfo(obj):
 # 删除异常符号
     holderinfo_orig = delFaultCode(holderinfo_orig)
 #删除链表成员，多余的信息和股票种类
+    if len(holderinfo_orig) == 0:
+        print("Error Msg :holderinfo_orig is Null. Stockcode : [%s] " % Local_Stock.code)
+        return False
     holderinfo_orig = delNotUsedinfo(holderinfo_orig)
     holderinfo_orig.append("1")
     countSeason = holderinfo_orig.count("1") - 1
@@ -296,7 +296,6 @@ def getholderInfo(obj):
     return holderinfo_list_OK_NG
 
 def updateHolderInfo(listObj,listDate):
-    global ErrMsg
     newestDataDB = getNewestDateDB(Local_Stock.code)
     newStockflag = 0
     if newestDataDB == None:
@@ -319,14 +318,19 @@ def updateHolderInfo(listObj,listDate):
         except Exception as e:
             print(e)
             break
-        if cnt1 % 20 == 0:
-            conn.commit()
 
 def insertData(listObj, listDate, len1, cnt1):
     global ErrMsg
+    global mutex
     global InsertStockCode
-    print("insert Data: %s" % listObj)
+    conn = pymysql.connect(host='localhost', port='', user='root', passwd='yuanwei111', db='stockinfo', charset='utf8')
+    cur = conn.cursor()
+    print("ThreadName:[%s] stockCode:[%s]insert Data: %s" % (threading.current_thread().name, Local_Stock.code, listObj))
+    mutex.acquire()
     InsertStockCode.append(Local_Stock.code)
+    mutex.release()
+    date_now_time = time.localtime()
+    updateTime = "%d%02d%02d" % (date_now_time.tm_year, date_now_time.tm_mon, date_now_time.tm_mday)
     for cnt2 in range(int(len1 / 4)):
         if DEBUG_LOG == 1:
             print("code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s] " %
@@ -341,8 +345,10 @@ def insertData(listObj, listDate, len1, cnt1):
               "holder_date_no," \
               "holder_name," \
               "stock_mount," \
-              "stock_per) " \
+              "stock_per," \
+              "updatetime) " \
               "values ('%s'," \
+              "'%s'," \
               "'%s'," \
               "'%s'," \
               "'%s'," \
@@ -354,22 +360,30 @@ def insertData(listObj, listDate, len1, cnt1):
                   listObj[cnt1][cnt2 * 4],
                   listObj[cnt1][cnt2 * 4 + 1].replace("'", "''"),
                   listObj[cnt1][cnt2 * 4 + 2],
-                  listObj[cnt1][cnt2 * 4 + 3]
+                  listObj[cnt1][cnt2 * 4 + 3],
+                  updateTime
               )
         if DEBUG_LOG == 1:
             print(SQL)
         try:
+            mutex.acquire()
             cur.execute(SQL)
+            mutex.release()
         except Exception as e:
-            print(e)
-            print("Err!! code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s] " %
-                  (Local_Stock.code,
+            print("ThreadName:[%s] SQL Exception : [%s]" % (threading.current_thread().name, e))
+            print("ThreadName:[%s] Err!! code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s] updatetime[%s]" %
+                  (
+                    threading.current_thread().name,
+                    Local_Stock.code,
                    DivDate(listDate[cnt1 * 4]),
                    listObj[cnt1][cnt2 * 4],
                    listObj[cnt1][cnt2 * 4 + 1].replace("'", "''"),
                    listObj[cnt1][cnt2 * 4 + 2],
-                   listObj[cnt1][cnt2 * 4 + 3])
+                   listObj[cnt1][cnt2 * 4 + 3],
+                   updateTime
                   )
+                  )
+            mutex.acquire()
             ErrMsg.append("e:[%s] code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s]" %
                           (e,
                            Local_Stock.code,
@@ -379,44 +393,63 @@ def insertData(listObj, listDate, len1, cnt1):
                            listObj[cnt1][cnt2 * 4 + 2],
                            listObj[cnt1][cnt2 * 4 + 3])
                           )
+            mutex.release()
             conn.rollback()
+            return
+    conn.commit()
+    return
 
 
 def startReadAndExc(BaseFilePath = BASE_FILEPATH):
     global g_StockCodesAll
+    global mutex
     while len(g_StockCodesAll) > 0:
+        mutex.acquire()
         stockcode = g_StockCodesAll.pop()
+        mutex.release()
         stockcode = str(stockcode).zfill(6)
         Local_Stock.code = stockcode
-        if stockcode > "600000":
-            continue
         FileFullPath = BaseFilePath + stockcode + ".txt"
         fileInfo = ReadFile(FileFullPath)
         obj = transToBS_stockBasic(fileInfo)
         holderinfo_list = getholderInfo(obj)
+        if holderinfo_list == False:
+            continue
         result = getHolderNum(fileInfo)
         # insert the HolderInfo data
         nRet = updateHolderInfo(holderinfo_list, result)
 
-def run():
-    global record_thread
+def AddStockHolderInfoRun():
     global g_StockCodesAll
     record_thread = []
     time_start = time.time()
     g_StockCodesAll = GetAllStockCodes()
     print("Stock_sum:", g_StockCodesAll)
-    nRet = startReadAndExc()
-    conn.commit()
+    for k in range(THREAD_NUM):
+        new_thread = threading.Thread(target=startReadAndExc)
+        new_thread.start()
+        record_thread.append(new_thread)
+    for thread in record_thread:
+        thread.join()
+    print("InsertStockCode: [%s] " % InsertStockCode)
+    print("All time : [%d]" % (time.time() - time_start))
     for em in ErrMsg:
         print("ErrMsg:[%s]" % em)
 
 if __name__ == '__main__':
+    conn = pymysql.connect(host='localhost', port='', user='root', passwd='yuanwei111', db='stockinfo', charset='utf8')
+    cur = conn.cursor()
     record_thread = []
     time_start = time.time()
     g_StockCodesAll = GetAllStockCodes()
     print("Stock_sum:", g_StockCodesAll)
-    nRet = startReadAndExc()
+    for k in range(THREAD_NUM):
+        new_thread = threading.Thread(target=startReadAndExc)
+        new_thread.start()
+        record_thread.append(new_thread)
+    for thread in record_thread:
+        thread.join()
     print("InsertStockCode: [%s] " % InsertStockCode)
-    conn.commit()
+    print("All time : [%d]" % (time.time() - time_start))
     for em in ErrMsg:
         print("ErrMsg:[%s]" % em)

@@ -18,11 +18,11 @@ STOCK_HOLDER_INFO = 2
 STOCK_AVG_NUM = 3
 FILEPATH_BASE = "D:\\python_SRC\\Stock_SRC\\Ver2.0\\log\\"
 FILEPATH_HTMLDATA_BASE = "D:\\python_SRC\\Stock_SRC\\Ver2.0\\htmldata\\"
-BASE_FILEPATH = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171021\\"
+BASE_FILEPATH = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171028\\"
 mutex = threading.Lock()
 
 CNT = 0
-LOG = 1
+LOG = 0
 
 SQL = "no data"
 conn = pymysql.connect(host='localhost',port='',user='root',passwd='yuanwei111',db='stockinfo',charset='utf8')
@@ -54,9 +54,7 @@ def updateStockHolderCnt(tid):
             mutex.release()
             break
         stockcode = str(g_StockCodesAll[rows_cnt]).zfill(6)
-        print("%s ,threading:%d ,mutex.acquire1" % (stockcode, tid))
         mutex.release()
-        print("%s,threading:%d ,mutex.release1" % (stockcode, tid))
         FileFullPath = BASE_FILEPATH + stockcode + ".txt"
         if LOG == 1:
             print("%s threading(%s)" % (stockcode, tid))
@@ -96,7 +94,7 @@ def updateStockHolderCnt(tid):
         mutex.release()
         print("%s, threading:%d ,mutex.release2" % (stockcode, tid))
 
-def insertDate(stockcode,date,announce_date,stockHolderNum,stockAvgNum,tid):
+def insertDate(stockcode, date, announce_date, stockHolderNum, stockAvgNum, tid):
     global CNT
     global FILEPATH_LOG
     global LOG
@@ -131,25 +129,50 @@ def updateEnd():
     print("Log path: %s" % (FILEPATH_LOG))
     print("Update OK.")
 
-global FILEPATH_LOG
-rows_cnt = -1
-g_StockCodesAll =[]
-record_thread = []
-g_StockCodesAll = GetAllStockCodes()
-rows_len = len(g_StockCodesAll)
-print("Stock_sum:", rows_len)
-time_start = time.time()
-print(g_StockCodesAll)
+def AddHolderDataFileRun():
+    global rows_cnt
+    global FILEPATH_LOG
+    global time_start
+    global rows_len
+    rows_cnt = -1
+    global g_StockCodesAll
+    g_StockCodesAll =[]
+    record_thread = []
+    g_StockCodesAll = GetAllStockCodes()
+    rows_len = len(g_StockCodesAll)
+    print("Stock_sum:", rows_len)
+    time_start = time.time()
+    print(g_StockCodesAll)
+    for k in range(8):
+        new_thread = threading.Thread(target=updateStockHolderCnt, args=(k,))
+        new_thread.start()
+        record_thread.append(new_thread)
+    for thread in record_thread:
+        thread.join()
+    updateStockAvgper()
+    print("Last commit and cur.close conn.close")
+    conn.commit()
+    cur.close()
+    conn.close()
 
-for k in range(8):
-    new_thread = threading.Thread(target=updateStockHolderCnt, args=(k,))
-    new_thread.start()
-    record_thread.append(new_thread)
-
-for thread in record_thread:
-    thread.join()
-
-print("Last commit and cur.close conn.close")
-conn.commit()
-cur.close()
-conn.close()
+if __name__ == '__main__':
+    global FILEPATH_LOG
+    rows_cnt = -1
+    g_StockCodesAll =[]
+    record_thread = []
+    g_StockCodesAll = GetAllStockCodes()
+    rows_len = len(g_StockCodesAll)
+    print("Stock_sum:", rows_len)
+    time_start = time.time()
+    print(g_StockCodesAll)
+    for k in range(8):
+        new_thread = threading.Thread(target=updateStockHolderCnt, args=(k,))
+        new_thread.start()
+        record_thread.append(new_thread)
+    for thread in record_thread:
+        thread.join()
+    updateStockAvgper()
+    print("Last commit and cur.close conn.close")
+    conn.commit()
+    cur.close()
+    conn.close()

@@ -63,7 +63,6 @@ def insert():
     global DATA_ALL_CNT
     htmlAllData = getHtml("http://quote.eastmoney.com/stocklist.html")
     DataAll = getAllStockNum(htmlAllData)
-    print("DataAll : [%s]" % DataAll)
     DATA_ALL_CNT = len(DataAll)
     iBool = insertStockList(DataAll)
     if iBool == -1:
@@ -81,6 +80,10 @@ def checkStockCodeExist(num):
         return 0
     return 1
 
-if __name__ == '__main__':
+def AddStockListRun():
     insert()
-    print("dataBase OK")
+
+if __name__ == '__main__':
+    print("Start update StockList!")
+    insert()
+    print("Completed update StockList!")
