@@ -6,6 +6,12 @@ import os
 import pymysql
 import time
 
+BASE_FILEPATH = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171117\\"
+
+def getBaseFilePath():
+    global BASE_FILEPATH
+    return BASE_FILEPATH
+
 def WriteFile(fname,data):
     f = open(fname, 'a')
     if f:
@@ -43,7 +49,7 @@ def GetAllStockCodes():
 def getHtml(url):
     error = 0
     cnt = 1
-    while error == 0 and cnt < 10:
+    while error == 0 and cnt < 4:
         error = 1
         try:
             page = urllib.request.urlopen(url, timeout=2000)
@@ -58,7 +64,7 @@ def getHtml(url):
             print(url)
             cnt = cnt +1
             error = 0
-    if cnt == 10:
+    if cnt == 4:
         return -1
     html_tmp = page.read()
 ##    codetype = chardet.detect(html_tmp)['encoding']
@@ -71,7 +77,7 @@ def getNewestDateDB(stockcode):
     Conn = pymysql.connect(host='localhost', port='', user='root', passwd='yuanwei111', db='stockinfo', charset='utf8')
     Cur = Conn.cursor()
     SQL1 = "select max(holder_date) from " \
-           "holderinfo where " \
+           "stockholderdetails where " \
            "stockCode = '%s'" % stockcode
     try:
         Cur.execute(SQL1)

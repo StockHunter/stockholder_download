@@ -1,19 +1,22 @@
 from multiprocessing import Process
 from UpdateStocklist.AddStockList import AddStockListRun
-from UpdateStockHolderInfo.AddStockHolderInfo import AddStockHolderInfoRun
-from UpdateStockholderCount.AddHolderDataFile import AddHolderDataFileRun
+from UpdateStockHolderInfo.AddStockholderDetails import AddStockholderDetailsRun
+from UpdateStockholderData.AddStockholderData import AddStockholderDataRun
+from UpdateStockholderData.UpdateStockholderData import *
 
 if __name__ == '__main__':
     print("Start update StockList!")
     AddStockListRun()
     print("Completed update StockList!")
-    p1 = Process(target=AddStockHolderInfoRun)
-    print("Start updateStockHolderInfoRun!")
+    p1 = Process(target=AddStockholderDetailsRun)
+    print("Start AddStockholderDetailsRun!")
     p1.start()
-    p2 = Process(target=AddHolderDataFileRun)
-    print("Start UpdateHolderDateFileRun!")
+    p2 = Process(target=AddStockholderDataRun)
+    print("Start AddStockholderDataRun!")
     p2.start()
     p1.join()
-    print("Completed updateStockHolderInfoRun!")
+    print("Completed AddStockholderDetailsRun!")
     p2.join()
-    print("Completed UpdateHolderDateFileRun!")
+    print("Completed AddStockholderDataRun!")
+    UpdateStockholderData()
+    print("Completed UpdateStockholderData!")

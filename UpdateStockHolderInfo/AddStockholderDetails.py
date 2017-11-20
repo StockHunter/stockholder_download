@@ -5,8 +5,9 @@ import pymysql
 import time
 import threading
 import sys
+import logging
 sys.path.append("..")
-from com.ComMethod import GetAllStockCodes, ReadFile, getNewestDateDB
+from com.ComMethod import GetAllStockCodes, ReadFile, getNewestDateDB,getBaseFilePath
 
 global countOK
 global countNG
@@ -22,15 +23,19 @@ global InsertStockCode
 global mutex
 global THREAD_NUM
 
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(filename)s %(process)d %(thread)d [line:%(lineno)d]  %(levelname)s  %(message)s',
+                    datefmt='%a, %d %b %Y %H:%M:%S')
+
 UpdateGenrate = [0, 1, 2, 3]
 Local_Stock = threading.local()
 g_StockCodesAll = []
 ERROR_LEN_LOG = [0]
-DEBUG_LOG = 2
+DEBUG_LOG = 0
 countNG = 0
 countOK = 0
 THREAD_NUM = 5
-BASE_FILEPATH = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171028\\"
+BASE_FILEPATH = getBaseFilePath()
 mutex = threading.Lock()
 InsertStockCode = []
 Header = {}
@@ -119,7 +124,7 @@ def transToBS_stockBasic(webInfo):
     try:
         bsObj = BeautifulSoup(webInfo, "lxml")
     except AttributeError as e:
-        print("AttributeError!!")
+        logging.info("AttributeError!!")
         return None
     return bsObj
 
@@ -144,24 +149,24 @@ def dataCheck(list1):
         if len1%4 != 0:
             list1[a].append("NG")
             if DEBUG_LOG == 2:
-                print("Data Error!!! errLen[%d]" % len1 )
-                print("Count[%d]: %s " % (a,list1[a]))
+                logging.info("Data Error!!! errLen[%d]" % len1 )
+                logging.info("Count[%d]: %s " % (a, list1[a]))
                 errString = "Count[" + str(a) + "] len[" + str(len1) + "]  code[" + Local_Stock.code + "]: " + str(list1[a])
                 ERROR_LEN_LOG.append(errString)
-                print("Sum Error Info:")
-                print(ERROR_LEN_LOG)
+                logging.info("Sum Error Info:")
+                logging.info(ERROR_LEN_LOG)
                 for n in range(len(ERROR_LEN_LOG)):
-                    print(ERROR_LEN_LOG[n])
+                    logging.info(ERROR_LEN_LOG[n])
             if DEBUG_LOG == 1:
-                print("=============InputData Start===============")
+                logging.info("=============InputData Start===============")
                 for n in range(len(list1)):
-                    print("Count[%d]:%s " % (n,list1[n]))
-                print("=============InputData End  ===============")
+                    logging.info("Count[%d]:%s " % (n,list1[n]))
+                logging.info("=============InputData End  ===============")
             countNG = countNG + 1
-            print("countOK: %d,countNG:%d code:%s " % (countOK, countNG, Local_Stock.code))
+            logging.info("countOK: %d,countNG:%d code:%s " % (countOK, countNG, Local_Stock.code))
             break
         countOK = countOK + 1
-#        print("countOK: %d,countNG:%d code:%s " % (countOK, countNG, Local_Stock.code))
+#        logging.info("countOK: %d,countNG:%d code:%s " % (countOK, countNG, Local_Stock.code))
         list1[a].append("OK")
     return list1
 
@@ -227,7 +232,7 @@ def cutListToArrayList(countSeason,ListObj):
     for count in range(1, countSeason):
         index1 = ListObj.index("1")
         if DEBUG_LOG == 1:
-            print("ListObj[%d] : [%s]" %(index1+1, ListObj[index1+1]))
+            logging.info("ListObj[%d] : [%s]" %(index1+1, ListObj[index1+1]))
         if (ListObj[index1+1] > "9"):
             ListObj[index1] = ListObj[index1].replace('1',"*")
             index2 = ListObj.index("1")
@@ -238,26 +243,26 @@ def cutListToArrayList(countSeason,ListObj):
                         ListObj[index2] = ListObj[index2].replace('1', "*")
                         index2 = ListObj.index("1")
                         if DEBUG_LOG == 1:
-                            print("I count:[%d] countSeason:[%d]" % (count, countSeason))
-                            print("I countPers1:[%d], len:[%d]" % (countPers1, len(ListObj)))
-                            print("I index1:[%s],list[index1]:[%s]" % (index1, ListObj[index1]))
-                            print("I index2:[%s],list[index2]:[%s]" % (index2, ListObj[index2]))
-                            print("I listArrayObj[%d]:[%s]" % (count-1, ListObj[index1:index2]))
-                            print("I ListObj[index2]:[%s]" % ListObj[index2])
+                            logging.info("I count:[%d] countSeason:[%d]" % (count, countSeason))
+                            logging.info("I countPers1:[%d], len:[%d]" % (countPers1, len(ListObj)))
+                            logging.info("I index1:[%s],list[index1]:[%s]" % (index1, ListObj[index1]))
+                            logging.info("I index2:[%s],list[index2]:[%s]" % (index2, ListObj[index2]))
+                            logging.info("I listArrayObj[%d]:[%s]" % (count-1, ListObj[index1:index2]))
+                            logging.info("I ListObj[index2]:[%s]" % ListObj[index2])
                         if index2 == len(ListObj)-1:
                             break
             listArrayObj[count - 1] = ListObj[index1:index2]
             if DEBUG_LOG == 1:
-                print("II count:%d countSeason:%d" % (count, countSeason))
-                print("II index1:%d, len:%d " % (index1,len(ListObj)))
-                print("II index2:%d, len:%d " % (index2,len(ListObj)))
-                print("II listArrayObj[%d]:%s" % (count-1,ListObj[index1:index2]))
-                print("II ListObj[%d]: %s " % (index1+1, ListObj[index1+1]))
+                logging.info("II count:%d countSeason:%d" % (count, countSeason))
+                logging.info("II index1:%d, len:%d " % (index1,len(ListObj)))
+                logging.info("II index2:%d, len:%d " % (index2,len(ListObj)))
+                logging.info("II listArrayObj[%d]:%s" % (count-1,ListObj[index1:index2]))
+                logging.info("II ListObj[%d]: %s " % (index1+1, ListObj[index1+1]))
         if DEBUG_LOG == 1:
-            print("III count:%d countSeason:%d" % (count, countSeason))
-            print("III index2:%d, len:%d " % (index2,len(ListObj)))
-            print("III listArrayObj[%d]:%s" % (count-1, ListObj[index1:index2]))
-            print("****ALL:%s **** " % ListObj)
+            logging.info("III count:%d countSeason:%d" % (count, countSeason))
+            logging.info("III index2:%d, len:%d " % (index2,len(ListObj)))
+            logging.info("III listArrayObj[%d]:%s" % (count-1, ListObj[index1:index2]))
+            logging.info("****ALL:%s **** " % ListObj)
         if count == countSeason - countPers1:
             break
     return listArrayObj
@@ -272,7 +277,7 @@ def getholderInfo(obj):
     holderinfo_orig = delFaultCode(holderinfo_orig)
 #删除链表成员，多余的信息和股票种类
     if len(holderinfo_orig) == 0:
-        print("Error Msg :holderinfo_orig is Null. Stockcode : [%s] " % Local_Stock.code)
+        logging.warning("holderinfo_orig is Null. Stockcode : [%s] " % Local_Stock.code)
         return False
     holderinfo_orig = delNotUsedinfo(holderinfo_orig)
     holderinfo_orig.append("1")
@@ -280,19 +285,19 @@ def getholderInfo(obj):
     holderinfo_list = cutListToArrayList(countSeason, holderinfo_orig)
     if DEBUG_LOG == 1:
         for tmp in holderinfo_list:
-            print("tmp: %s" % tmp)
+            logging.info("tmp: %s" % tmp)
 #删除链表里面''成员；
     holderinfo_list = delErrCode(holderinfo_list)
 #转换链表成员from * to 1
     holderinfo_list = swichMarkTo1(holderinfo_list)
     if DEBUG_LOG == 1:
         for tmp in holderinfo_list:
-            print("tmp: %s" % tmp)
+            logging.info("tmp: %s" % tmp)
 #检验链表长度并添加OK，NG标志
     holderinfo_list_OK_NG = dataCheck(holderinfo_list)
     if DEBUG_LOG == 1:
         for tmp2 in holderinfo_list_OK_NG:
-            print("tmp2: %s" % tmp2)
+            logging.info("tmp2: %s" % tmp2)
     return holderinfo_list_OK_NG
 
 def updateHolderInfo(listObj,listDate):
@@ -307,7 +312,7 @@ def updateHolderInfo(listObj,listDate):
             len1 = len(listObj[cnt1])
             listDate[cnt1*4] = DivDate(listDate[cnt1 * 4])
             if DEBUG_LOG == 1:
-                print("listDate[%d] : [%s]" % (cnt1*4, listDate[cnt1*4]))
+                logging.info("listDate[%d] : [%s]" % (cnt1*4, listDate[cnt1*4]))
             #判断是不是新股票的数据
             if newStockflag == 1:
                 insertData(listObj, listDate, len1, cnt1)
@@ -316,7 +321,7 @@ def updateHolderInfo(listObj,listDate):
             else:
                 break
         except Exception as e:
-            print(e)
+            logging.info(e)
             break
 
 def insertData(listObj, listDate, len1, cnt1):
@@ -325,7 +330,7 @@ def insertData(listObj, listDate, len1, cnt1):
     global InsertStockCode
     conn = pymysql.connect(host='localhost', port='', user='root', passwd='yuanwei111', db='stockinfo', charset='utf8')
     cur = conn.cursor()
-    print("ThreadName:[%s] stockCode:[%s]insert Data: %s" % (threading.current_thread().name, Local_Stock.code, listObj))
+    logging.info("stockCode:[%s]insert Data: %s" % (Local_Stock.code, listObj))
     mutex.acquire()
     InsertStockCode.append(Local_Stock.code)
     mutex.release()
@@ -333,14 +338,14 @@ def insertData(listObj, listDate, len1, cnt1):
     updateTime = "%d%02d%02d" % (date_now_time.tm_year, date_now_time.tm_mon, date_now_time.tm_mday)
     for cnt2 in range(int(len1 / 4)):
         if DEBUG_LOG == 1:
-            print("code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s] " %
+            logging.info("code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s] " %
                   (Local_Stock.code,
                    listDate[cnt1 * 4],
                    listObj[cnt1][cnt2 * 4],
                    listObj[cnt1][cnt2 * 4 + 1],
                    listObj[cnt1][cnt2 * 4 + 2],
                    listObj[cnt1][cnt2 * 4 + 3]))
-        SQL = "insert into holderinfo(stockCode," \
+        SQL = "insert into stockholderdetails(stockCode," \
               "holder_date," \
               "holder_date_no," \
               "holder_name," \
@@ -364,16 +369,15 @@ def insertData(listObj, listDate, len1, cnt1):
                   updateTime
               )
         if DEBUG_LOG == 1:
-            print(SQL)
+            logging.info(SQL)
         try:
             mutex.acquire()
             cur.execute(SQL)
             mutex.release()
         except Exception as e:
-            print("ThreadName:[%s] SQL Exception : [%s]" % (threading.current_thread().name, e))
-            print("ThreadName:[%s] Err!! code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s] updatetime[%s]" %
+            logging.info("SQL Exception : [%s]" % (e))
+            logging.info("Err!! code[%s] date[%s] num[%s] name[%s] mount[%s] per[%s] updatetime[%s]" %
                   (
-                    threading.current_thread().name,
                     Local_Stock.code,
                    DivDate(listDate[cnt1 * 4]),
                    listObj[cnt1][cnt2 * 4],
@@ -411,6 +415,9 @@ def startReadAndExc(BaseFilePath = BASE_FILEPATH):
         Local_Stock.code = stockcode
         FileFullPath = BaseFilePath + stockcode + ".txt"
         fileInfo = ReadFile(FileFullPath)
+        if fileInfo == False:
+            logging.error("ReadFile Error: [%s]" % (FileFullPath))
+            return False
         obj = transToBS_stockBasic(fileInfo)
         holderinfo_list = getholderInfo(obj)
         if holderinfo_list == False:
@@ -419,22 +426,22 @@ def startReadAndExc(BaseFilePath = BASE_FILEPATH):
         # insert the HolderInfo data
         nRet = updateHolderInfo(holderinfo_list, result)
 
-def AddStockHolderInfoRun():
+def AddStockholderDetailsRun():
     global g_StockCodesAll
     record_thread = []
     time_start = time.time()
     g_StockCodesAll = GetAllStockCodes()
-    print("Stock_sum:", g_StockCodesAll)
+    logging.info("Stock_sum:[%s]" % g_StockCodesAll)
     for k in range(THREAD_NUM):
         new_thread = threading.Thread(target=startReadAndExc)
         new_thread.start()
         record_thread.append(new_thread)
     for thread in record_thread:
         thread.join()
-    print("InsertStockCode: [%s] " % InsertStockCode)
-    print("All time : [%d]" % (time.time() - time_start))
+    logging.info("InsertStockCode: [%s] " % InsertStockCode)
+    logging.info("All time : [%d]" % (time.time() - time_start))
     for em in ErrMsg:
-        print("ErrMsg:[%s]" % em)
+        logging.info("ErrMsg:[%s]" % em)
 
 if __name__ == '__main__':
     conn = pymysql.connect(host='localhost', port='', user='root', passwd='yuanwei111', db='stockinfo', charset='utf8')
@@ -442,14 +449,14 @@ if __name__ == '__main__':
     record_thread = []
     time_start = time.time()
     g_StockCodesAll = GetAllStockCodes()
-    print("Stock_sum:", g_StockCodesAll)
+    logging.info("Stock_sum:", g_StockCodesAll)
     for k in range(THREAD_NUM):
         new_thread = threading.Thread(target=startReadAndExc)
         new_thread.start()
         record_thread.append(new_thread)
     for thread in record_thread:
         thread.join()
-    print("InsertStockCode: [%s] " % InsertStockCode)
-    print("All time : [%d]" % (time.time() - time_start))
+    logging.info("InsertStockCode: [%s] " % InsertStockCode)
+    logging.info("All time : [%d]" % (time.time() - time_start))
     for em in ErrMsg:
-        print("ErrMsg:[%s]" % em)
+        logging.info("ErrMsg:[%s]" % em)
