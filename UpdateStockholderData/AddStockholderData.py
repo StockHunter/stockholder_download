@@ -83,7 +83,7 @@ def updateStockholderData(tid):
         mutex.acquire()   #add lock
         SQL2 = "select MAX(holder_date) from stockholderdata where stock_code = %s" % (str(int(stockcode)))
         FILEPATH_HTMLDATA_FILE_NAME="%s%s" %(FILEPATH_HTMLDATA_BASE,stockcode) + ".txt"
-        WriteFile(FILEPATH_HTMLDATA_FILE_NAME,htmlinfo)
+#        WriteFile(FILEPATH_HTMLDATA_FILE_NAME,htmlinfo)
         cur.execute(SQL2)
         date_now = cur.fetchone()
         if date_now[0] == None:

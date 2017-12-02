@@ -1,13 +1,14 @@
 import time
 import sys
 import logging
-sys.path.append("..")
-from com.ComMethod import GetAllStockCodes, WriteFile, getHtml, getBaseFilePath
 import threading
 import os
+sys.path.append("..")
+from com.ComMethod import GetAllStockCodes, WriteFile, getHtml, getBaseFilePath
+from UpdateStocklist.AddStockList import AddStockListRun
 
 logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(filename)s %(process)d %(thread)d [line:%(lineno)d]  %(levelname)s  %(message)s',
+                    format = '%(asctime)s %(filename)s %(process)d %(thread)d [line:%(lineno)d]  %(levelname)s  %(message)s',
                     datefmt='%a, %d %b %Y %H:%M:%S')
 
 global FILEPATH_BASE2
@@ -16,7 +17,6 @@ global list_StockCodes
 global local_stockCode
 global mutex
 global THREAD_NUM
-global record_thread
 
 LOG = 1
 list_StockCodes = []
@@ -24,7 +24,7 @@ FILEPATH_BASE2 = getBaseFilePath()
 local_stockCode = threading.local()
 mutex = threading.Lock()
 THREAD_NUM = 5
-record_thread = []
+
 
 def DownloadWebInfoStart(sFilePath = FILEPATH_BASE2, mode = "continue"):
     global mutex
@@ -54,7 +54,7 @@ def downLoadWebInfo(PathTmp):
           % (stockCode)
     logging.info("web:[%s]" % (web))
     mutex.acquire()
-    time.sleep(4)
+    time.sleep(5)
     mutex.release()
     timeStart1 = time.time()
     htmlinfo = getHtml(web)
@@ -66,30 +66,47 @@ def downLoadWebInfo(PathTmp):
     logging.info("time:[%d]" % (time.time() - timeStart1))
 
 def run(basePath=FILEPATH_BASE2, mode="continue"):
-    global list_StockCodes
-    global record_thread
-    global FILEPATH_BASE2
     logging.info("GetWebInfo Start")
-    if os.path.exists(FILEPATH_BASE2) == False:
-        os.mkdir(FILEPATH_BASE2, 777)
     list_StockCodes = GetAllStockCodes()
-    for k in range(THREAD_NUM):
-        new_thread = threading.Thread(target=DownloadWebInfoStart, args=(basePath, mode))
-        new_thread.start()
-        record_thread.append(new_thread)
-    for thread in record_thread:
-        thread.join()
+    downloadAllRun(list_StockCodes)
+    nRet = checkFileSize(list_StockCodes)
+    if nRet == False:
+        downloadAllRun(list_StockCodes)
     logging.info("GetWebInfo End")
 
-if __name__ == '__main__':
-    logging.info("GetWebInfo Start")
+def downloadAllRun(list_StockCodes):
+    global FILEPATH_BASE2
+    global THREAD_NUM
+    record_thread = []
+    AddStockListRun()
+    logging.info("Completed update StockList!")
     if os.path.exists(FILEPATH_BASE2) == False:
         os.mkdir(FILEPATH_BASE2, 777)
-    list_StockCodes = GetAllStockCodes()
     for k in range(THREAD_NUM):
         new_thread = threading.Thread(target=DownloadWebInfoStart)
         new_thread.start()
         record_thread.append(new_thread)
     for thread in record_thread:
         thread.join()
+    return True
+
+def checkFileSize(list_StockCodes):
+    global FILEPATH_BASE2
+    errFlag = 0
+    for stockcode in list_StockCodes:
+        path = FILEPATH_BASE2 + stockcode + ".txt"
+        if os.stat(path).st_size < 5000:
+            os.remove(path)
+            errFlag = -1
+    if errFlag == -1:
+        return False
+    return True
+
+if __name__ == '__main__':
+    logging.info("Start update StockList!")
+    list_StockCodes = GetAllStockCodes()
+    downloadAllRun(list_StockCodes)
+    nRet = checkFileSize(list_StockCodes)
+    if nRet == False:
+        downloadAllRun(list_StockCodes)
     logging.info("GetWebInfo End")

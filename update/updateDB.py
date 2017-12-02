@@ -1,13 +1,12 @@
 from multiprocessing import Process
+import sys
+sys.path.append("..")
 from UpdateStocklist.AddStockList import AddStockListRun
 from UpdateStockHolderInfo.AddStockholderDetails import AddStockholderDetailsRun
 from UpdateStockholderData.AddStockholderData import AddStockholderDataRun
 from UpdateStockholderData.UpdateStockholderData import *
 
 if __name__ == '__main__':
-    print("Start update StockList!")
-    AddStockListRun()
-    print("Completed update StockList!")
     p1 = Process(target=AddStockholderDetailsRun)
     print("Start AddStockholderDetailsRun!")
     p1.start()

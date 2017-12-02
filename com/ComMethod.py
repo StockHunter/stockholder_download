@@ -6,7 +6,7 @@ import os
 import pymysql
 import time
 
-BASE_FILEPATH = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171117\\"
+BASE_FILEPATH = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171201\\"
 
 def getBaseFilePath():
     global BASE_FILEPATH
@@ -66,7 +66,10 @@ def getHtml(url):
             error = 0
     if cnt == 4:
         return -1
-    html_tmp = page.read()
+    try:
+        html_tmp = page.read()
+    except Exception as es:
+        print("Exception:[%s]" % es)
 ##    codetype = chardet.detect(html_tmp)['encoding']
 ##    html = decodeFunc(html_tmp)
     html = html_tmp.decode('gbk','ignore')
