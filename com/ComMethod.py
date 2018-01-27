@@ -1,19 +1,22 @@
 import re
-import urllib.request
+from urllib import request
 import chardet
 import threading
 import os
 import pymysql
 import time
+import random
+import codecs
 
-BASE_FILEPATH = "D:\\python_SRC\\Stock_SRC\\tmpData\\20171201\\"
+BASE_FILEPATH = "/Users/yuanwei/Downloads/pythonPro/stocksys/20180127/"
 
 def getBaseFilePath():
     global BASE_FILEPATH
     return BASE_FILEPATH
 
 def WriteFile(fname,data):
-    f = open(fname, 'a')
+#    f = open(fname, 'a')
+    f = codecs.open(fname, 'a', 'utf-8')
     if f:
         f.write(data)
         f.close()
@@ -32,7 +35,7 @@ def ReadFile(fname):
         return False
 
 def GetAllStockCodes():
-    conn = pymysql.connect(host='localhost',port='',user='root',passwd='yuanwei111',db='stockinfo',charset='utf8')
+    conn = pymysql.connect(host='localhost',port='',user='root',passwd='adency',db='stockdb',charset='utf8')
     cur = conn.cursor()
     lStockCode = []
     SQL = "SELECT stocknum from" \
@@ -46,38 +49,44 @@ def GetAllStockCodes():
     return lStockCode
 
 #get web all data
-def getHtml(url):
+def getHtml(url, proxy = None):
     error = 0
     cnt = 1
+    print("proxy: %s" % proxy)
+    headers = {
+        'User-Agent':r'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
+    }
     while error == 0 and cnt < 4:
         error = 1
         try:
-            page = urllib.request.urlopen(url, timeout=2000)
+            if proxy == None:
+                req = request.Request(url, headers=headers)
+                html = request.urlopen(req, timeout=2000).read()
+            else:
+                proxy_suport = request.ProxyHandler({'http':random.choice(proxy)})
+                opener = request.build_opener(proxy_suport)
+                r = opener.open("http://www.baidu.com", timeout=2)
+                html = r.read()
         except urllib.request.HTTPError as e:
-            time.sleep(15)
-            print("sleep 15 seconds. url:%s cnt:%d" % (url, cnt))
+            time.sleep(5)
+            print("sleep 5 seconds. url:%s cnt:%d" % (url, cnt))
             if e.code == 500:
                 print(e.msg)
                 return -2
             print(e.code)
             print(e.msg)
             print(url)
-            cnt = cnt +1
+            cnt = cnt + 1
             error = 0
     if cnt == 4:
         return -1
-    try:
-        html_tmp = page.read()
-    except Exception as es:
-        print("Exception:[%s]" % es)
 ##    codetype = chardet.detect(html_tmp)['encoding']
 ##    html = decodeFunc(html_tmp)
-    html = html_tmp.decode('gbk','ignore')
-    page.close()
+    html = html.decode('gbk', 'ignore')
     return html
 
 def getNewestDateDB(stockcode):
-    Conn = pymysql.connect(host='localhost', port='', user='root', passwd='yuanwei111', db='stockinfo', charset='utf8')
+    Conn = pymysql.connect(host='localhost', port='', user='root', passwd='adency', db='stockdb', charset='utf8')
     Cur = Conn.cursor()
     SQL1 = "select max(holder_date) from " \
            "stockholderdetails where " \

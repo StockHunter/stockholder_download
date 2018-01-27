@@ -1,6 +1,6 @@
 import pymysql
 
-conn = pymysql.connect(host='localhost',port='',user='root',passwd='yuanwei111',db='stockinfo',charset='utf8')
+conn = pymysql.connect(host='localhost',port='',user='root',passwd='adency',db='stockdb',charset='utf8')
 cur = conn.cursor()
 
 def update_StockAvgPer():

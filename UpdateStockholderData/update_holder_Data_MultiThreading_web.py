@@ -19,7 +19,7 @@ CNT = 0
 LOG = 1
 
 SQL = "no data"
-conn = pymysql.connect(host='localhost',port='',user='root',passwd='yuanwei111',db='stockinfoadv',charset='utf8')
+conn = pymysql.connect(host='localhost',port='',user='root',passwd='adency',db='stockinfoadv',charset='utf8')
 cur = conn.cursor()
 
 def WriteFile(fname,data):

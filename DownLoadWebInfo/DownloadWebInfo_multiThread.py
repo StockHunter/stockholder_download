@@ -2,8 +2,10 @@ import time
 import sys
 import logging
 import threading
+import random
 import os
 sys.path.append("..")
+from proxy.proxy import get_proxy
 from com.ComMethod import GetAllStockCodes, WriteFile, getHtml, getBaseFilePath
 from UpdateStocklist.AddStockList import AddStockListRun
 
@@ -24,6 +26,7 @@ FILEPATH_BASE2 = getBaseFilePath()
 local_stockCode = threading.local()
 mutex = threading.Lock()
 THREAD_NUM = 5
+Proxy_list = []
 
 
 def DownloadWebInfoStart(sFilePath = FILEPATH_BASE2, mode = "continue"):
@@ -49,15 +52,19 @@ def DownloadWebInfoStart(sFilePath = FILEPATH_BASE2, mode = "continue"):
 
 def downLoadWebInfo(PathTmp):
     global LOG
+    global Proxy_list
     stockCode = local_stockCode.stock
     web = "http://vip.stock.finance.sina.com.cn/corp/go.php/vCI_StockHolder/stockid/%s.phtml" \
           % (stockCode)
     logging.info("web:[%s]" % (web))
     mutex.acquire()
-    time.sleep(5)
+    print("sleep 0.1s!")
+    time.sleep(0.1)
     mutex.release()
     timeStart1 = time.time()
-    htmlinfo = getHtml(web)
+    htmlinfo = getHtml(web, Proxy_list)
+#    htmlinfo = getHtml(web)
+
     if htmlinfo == -1:
         logging.info("WEB ERROR!! web:[%s]" % web)
         return False
@@ -78,7 +85,7 @@ def downloadAllRun(list_StockCodes):
     global FILEPATH_BASE2
     global THREAD_NUM
     record_thread = []
-    AddStockListRun()
+#    AddStockListRun()
     logging.info("Completed update StockList!")
     if os.path.exists(FILEPATH_BASE2) == False:
         os.mkdir(FILEPATH_BASE2, 777)
@@ -103,7 +110,9 @@ def checkFileSize(list_StockCodes):
     return True
 
 if __name__ == '__main__':
-    logging.info("Start update StockList!")
+#    logging.info("Start update StockList!")
+    print(os.path.split(os.path.realpath(__file__))[0])
+    Proxy_list = get_proxy(6)
     list_StockCodes = GetAllStockCodes()
     downloadAllRun(list_StockCodes)
     nRet = checkFileSize(list_StockCodes)
